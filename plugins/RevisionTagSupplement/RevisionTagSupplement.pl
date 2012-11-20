@@ -31,13 +31,13 @@ HTMLHEREDOC
         tags => {
             help_url => 'http://lab.magicvox.net/trac/mt-plugins/wiki/RevisionTagSupplement#tag-%t',
             block => {
-                '?HasRevs?' => "${FULLNAME}::Tags::Revisions",
+                'HasRevs?' => "${FULLNAME}::Tags::Revisions",
                 'Revisions' => "${FULLNAME}::Tags::Revisions",
 
-                '?HasRevEntries?' => "${FULLNAME}::Tags::RevEntries",
+                'HasRevEntries?' => "${FULLNAME}::Tags::RevEntries",
                 'RevEntries' => "${FULLNAME}::Tags::RevEntries",
 
-                '?RevIfChanged?' => "${FULLNAME}::Tags::RevIfChanged",
+                'RevIfChanged?' => "${FULLNAME}::Tags::RevIfChanged",
             },
             function => {
                 'RevCount' => "${FULLNAME}::Tags::Revisions",
