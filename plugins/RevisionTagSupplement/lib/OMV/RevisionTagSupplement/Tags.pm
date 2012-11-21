@@ -94,26 +94,33 @@ BUILD:
     return $block_out;
 }
 
-### mt:RevEntries block tag
-### mt:RevEntryCount conditional tag
-### mt:HasRevEntries functional tag
+### mt:Rev{Entries|Pages} block tag
+### mt:Rev{Entry|Page}Count conditional tag
+### mt:HasRev{Entries|Pages} functional tag
 #   include_empty   [0]|1
 #   lastn           [0]..N
 #   offset          [0]..N
 #   order           ascend|[descend]
+#   unique          0|[1]
 sub RevEntries {
     my ($ctx, $args, $cond) = @_;
 
-    my $model = 'entry';
+    my $model = $ctx->this_tag =~ /(entry|entries)/
+        ? 'entry'
+        : $ctx->this_tag =~ /pages?/
+            ? 'page'
+            : undef
+        or return $ctx->error (MT->translate ('Error in [_1] [_2]: [_3]', __PACKAGE__, __LINE__));
+
     my $class = MT->model($model)
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('Error in [_1] [_2]: [_3]', __PACKAGE__, __LINE__));
     my $datasource = $class->datasource
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('Error in [_1] [_2]: [_3]', __PACKAGE__, __LINE__));
     my $rev_class = MT->model ($datasource. ':revision')
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('Error in [_1] [_2]: [_3]', __PACKAGE__, __LINE__));
 
     my $blog = $ctx->stash ('blog')
-        or return $ctx->error('No blog');
+        or return $ctx->error (MT->translate ('record does not exist.'));
 
     my $unique = !defined $args->{unique} || $args->{unique};
     my $_terms = {
@@ -131,41 +138,42 @@ sub RevEntries {
             blog_id => $blog->id,
             status => 2,
             id => \'= entry_rev_entry_id',
+        }, {
+            $unique
+                ? (unique => 'entry_id')
+                : (),
         }),
     };
 
-    $_args->{join}[3]->{unique} = $unique;
     # mt:RevEntryCount
     return $rev_class->count ($_terms, $_args)
-        if 'mtreventrycount' eq $ctx->this_tag;
+        if $ctx->this_tag =~ /^mtrev\w+count$/;
     # mt:HasRevEntries?
     return $rev_class->count ($_terms, $_args)
-        if 'mthasreventries' eq $ctx->this_tag;
+        if $ctx->this_tag =~ /^mthasrev\w+$/;
     delete $_args->{join}[3]->{unique};
 
     # mt:RevEntries
-    if (!$unique) {
-        $_args = { %$_args,
-            defined $args->{offset} && 0 < $args->{offset}
-                    ? (offset => $args->{offset})
-                    : (),
-            defined $args->{lastn} && 0 < $args->{lastn}
-                    ? (limit => $args->{lastn})
-                    : (),
-        };
-    }
-    my $rev_iter = $rev_class->load_iter ($_terms, $_args);
+    $args->{lastn} = defined $args->{lastn}
+        ? $args->{lastn}
+        : $blog->entries_on_index;
 
     my $block_out;
     my %uniq_eid;
     my $token = $ctx->stash ('tokens');
     my $builder = $ctx->stash ('builder');
     my $vars = $ctx->{__stash}{vars} ||= {};
+
+    my $rev_iter = $rev_class->load_iter ($_terms, $_args);
     my $rev = $rev_iter->();
     my $rev_next;
     my $i = 0;
     while ($rev) {
         $rev_next = $rev_iter->();
+
+        my $rev_obj = $class->new->object_from_revision ($rev);
+        # [ $rev_obj, \@changed, $rev->rev_number ]
+        next        if $rev_obj->[0]->status != 2;  # Skip when revised entry not be published
         goto BUILD  if !$unique;                    # Always build becaus of no needing the duplications.
         next        if $uniq_eid{$rev->entry_id};   # Skip because already has been build
 
@@ -177,9 +185,6 @@ sub RevEntries {
 
 BUILD:
         local $ctx->{__stash}{revision} = $rev;
-
-        my $rev_obj = $class->new->object_from_revision ($rev);
-        # [ $rev_obj, \@changed, $rev->rev_number ]
         local $ctx->{__stash}{entry}  = $rev_obj->[0];
         local $vars->{__revchanged__} = $rev_obj->[1];
 
@@ -204,11 +209,12 @@ BUILD:
 }
 
 ### mt:RevIfChanged conditional tag
+#   column
 sub RevIfChanged {
     my ($ctx, $args) = @_;
 
     my $__revchanged__ = $ctx->{__stash}{vars}{__revchanged__}
-        or return $ctx->error ('No context of __revchanged__');
+        or return $ctx->error (MT->translate ('You used an [_1] tag outside of the proper context.', $ctx->stash ('tag')));
     if (defined (my $column = $args->{column})) {
         foreach (@$__revchanged__) {
             return 1 if lc $_ eq lc $column;
@@ -223,7 +229,7 @@ sub RevDate {
     my ($ctx, $args) = @_;
 
     my $rev = $ctx->stash ('revision')
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('You used an [_1] tag outside of the proper context.', $ctx->stash ('tag')));
     $args->{ts} = $rev->created_on;
     return $ctx->build_date ($args);
 }
@@ -233,7 +239,7 @@ sub RevDescription {
     my ($ctx, $args) = @_;
 
     my $rev = $ctx->stash ('revision')
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('You used an [_1] tag outside of the proper context.', $ctx->stash ('tag')));
     return $rev->description || '';
 }
 
@@ -242,7 +248,7 @@ sub RevNum {
     my ($ctx, $args) = @_;
 
     my $rev = $ctx->stash ('revision')
-        or return $ctx->error (__LINE__);
+        or return $ctx->error (MT->translate ('You used an [_1] tag outside of the proper context.', $ctx->stash ('tag')));
     return $rev->rev_number;
 }
 

@@ -11,7 +11,7 @@ use vars qw( $VENDOR $MYNAME $FULLNAME $VERSION );
 $FULLNAME = join '::',
         (($VENDOR, $MYNAME) = (split /::/, __PACKAGE__)[-2, -1]);
 (my $revision = '$Rev$') =~ s/\D//g;
-$VERSION = 'v0.10'. ($revision ? ".$revision" : '');
+$VERSION = 'v0.11'. ($revision ? ".$revision" : '');
 
 use base qw( MT::Plugin );
 my $plugin = __PACKAGE__->new ({
@@ -36,12 +36,15 @@ HTMLHEREDOC
 
                 'HasRevEntries?' => "${FULLNAME}::Tags::RevEntries",
                 'RevEntries' => "${FULLNAME}::Tags::RevEntries",
+                'HasRevPages?' => "${FULLNAME}::Tags::RevEntries",
+                'RevPages' => "${FULLNAME}::Tags::RevEntries",
 
                 'RevIfChanged?' => "${FULLNAME}::Tags::RevIfChanged",
             },
             function => {
                 'RevCount' => "${FULLNAME}::Tags::Revisions",
                 'RevEntryCount' => "${FULLNAME}::Tags::RevEntries",
+                'RevPageCount' => "${FULLNAME}::Tags::RevEntries",
 
                 'RevDate' => "${FULLNAME}::Tags::RevDate",
                 'RevDescription' => "${FULLNAME}::Tags::RevDescription",
