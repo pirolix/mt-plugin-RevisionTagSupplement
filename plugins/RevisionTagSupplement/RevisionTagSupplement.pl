@@ -11,7 +11,7 @@ use vars qw( $VENDOR $MYNAME $FULLNAME $VERSION );
 $FULLNAME = join '::',
         (($VENDOR, $MYNAME) = (split /::/, __PACKAGE__)[-2, -1]);
 (my $revision = '$Rev$') =~ s/\D//g;
-$VERSION = 'v0.11'. ($revision ? ".$revision" : '');
+$VERSION = 'v0.12'. ($revision ? ".$revision" : '392');
 
 use base qw( MT::Plugin );
 my $plugin = __PACKAGE__->new ({

@@ -46,7 +46,7 @@ sub Revisions {
         if 'mtrevcount' eq $ctx->this_tag;
     # mt:HasRevs?
     return $rev_class->count ($_terms, $_args)
-        if 'mtrevcount' eq $ctx->this_tag;
+        if 'mthasrevs' eq $ctx->this_tag;
 
     # mt:Revisions
     $_args = { %$_args,
